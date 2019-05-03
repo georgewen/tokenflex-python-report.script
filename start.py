@@ -22,7 +22,8 @@ import config.state as state
 import config.env as env
 import urllib
 import simple_http_server as SimpleHTTPServer
-from urlparse import urljoin
+#import http.server
+from urllib.parse import urljoin
 
 
 def start():
@@ -37,16 +38,16 @@ def start():
         '?response_type=code&client_id=' +
         state.args.FORGE_CLIENT_ID +
         '&redirect_uri=' +
-        urllib.quote_plus(
+        urllib.parse.quote_plus(
             state.args.FORGE_CALLBACK_URL) +
         '&scope=data:read%20data:write')
     try:
         import webbrowser
         webbrowser.open(authorization_url, new=0, autoraise=True)
     except ImportError:
-        print "Can not import webbrowser"
-    print "Go to the following link in your browser if the redirection hasn't started: "
-    print authorization_url
+        print("Can not import webbrowser")
+    print("Go to the following link in your browser if the redirection hasn't started: ")
+    print(authorization_url)
     SimpleHTTPServer.startHttpServer()
 
 

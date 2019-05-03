@@ -17,7 +17,7 @@
 #####################################################################
 
 import os
-from urlparse import urljoin
+from urllib.parse import urljoin
 access_token_url = os.getenv(
     'FORGE_TOKEN_URL',
     'https://developer.api.autodesk.com/authentication/v1/gettoken')

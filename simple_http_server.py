@@ -20,26 +20,28 @@ import argparse
 import json
 import os
 import requests
-import SimpleHTTPServer
-import SocketServer
+#import SimpleHTTPServer
+import http.server
+import socketserver
 import sys
-import urlparse
+#import urlparse
 import config.state as state
 import config.env as env
 import consumption_reporting as ConsumptionReporting
-import urlparse
-import BaseHTTPServer
+from urllib.parse import urlparse
+import urllib
+#import BaseHTTPServer
 
 httpd = None
 
 
 class ForgeCallbackHTTPRequestHandler(
-        SimpleHTTPServer.SimpleHTTPRequestHandler):
+        http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         global httpd
-        bits = urlparse.urlparse(self.path)
-        if bits.path == urlparse.urlparse(state.args.FORGE_CALLBACK_URL).path:
-            state.code = urlparse.parse_qs(bits.query)['code']
+        bits = urlparse(self.path)
+        if bits.path == urlparse(state.args.FORGE_CALLBACK_URL).path:
+            state.code = urllib.parse.parse_qs(bits.query)['code']
             data = {
                 'client_id': os.getenv(
                     'FORGE_CLIENT_ID',
@@ -59,7 +61,7 @@ class ForgeCallbackHTTPRequestHandler(
                 data=data)
             if resp.status_code == 200:
                 state.token = resp.json()['access_token']
-                print state.token
+                print(state.token)
                 self.send_response(200)
                 try:
                     ConsumptionReporting.start(state.token)
@@ -68,7 +70,7 @@ class ForgeCallbackHTTPRequestHandler(
                     print(e)
                     self.send_response(500)
             else:
-                print resp.json()
+                print(resp.json())
                 self.send_response(500)
             httpd.shutdown()
         else:
@@ -76,8 +78,8 @@ class ForgeCallbackHTTPRequestHandler(
 
 
 class ThreadingHTTPServer(
-        SocketServer.ThreadingMixIn,
-        BaseHTTPServer.HTTPServer):
+        socketserver.ThreadingMixIn,
+        http.server.HTTPServer):
     allow_reuse_address = True
 
 
@@ -86,5 +88,5 @@ def startHttpServer():
     PORT = 3000
     httpd = ThreadingHTTPServer(
         ("", PORT), ForgeCallbackHTTPRequestHandler)
-    print "serving at port", PORT
+    print("serving at port 3000")
     httpd.serve_forever()

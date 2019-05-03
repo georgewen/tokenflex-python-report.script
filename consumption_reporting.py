@@ -24,7 +24,8 @@ import requests
 import sys
 import urllib
 import config.env as env
-from urlparse import urljoin
+#from urlparse import urljoin
+from urllib.parse import urljoin
 
 
 def getRespJson(url, access_token):
@@ -36,7 +37,7 @@ def getRespJson(url, access_token):
 
 
 def downloadCsvFile(download_url, download_filename):
-    print 'Downloading CSV file ...'
+    print('Downloading CSV file ...')
     resp = requests.get(download_url)
     resp.raise_for_status()
     if resp.status_code == 200:
@@ -44,7 +45,7 @@ def downloadCsvFile(download_url, download_filename):
 
 
 def getContracts(access_token):
-    print 'Getting Contracts ...'
+    print('Getting Contracts ...')
     return getRespJson(
         urljoin(
             env.base_tokenflex_api,
@@ -53,25 +54,25 @@ def getContracts(access_token):
 
 
 def getExportRequestsDetails(access_token, contract_number, request_key):
-    print 'Getting Export Request Details ...'
+    print('Getting Export Request Details ...')
     return getRespJson(
         urljoin(
             env.base_tokenflex_api,
             'v1/export/' +
             contract_number +
             '/requests/' +
-            urllib.quote_plus(request_key)),
+            urllib.parse.quote_plus(request_key)),
         access_token)
 
 
 def pollExportRequestDetails(access_token, contract_number, request_key):
-    print 'Polling Export Request Details ...'
+    print('Polling Export Request Details ...')
     export_results_url = urljoin(
         env.base_tokenflex_api,
         'v1/export/' +
         contract_number +
         '/requests/' +
-        urllib.quote_plus(request_key))
+        urllib.parse.quote_plus(request_key))
     headers = {'Authorization': 'Bearer ' + access_token}
     web_handle = polling.poll(
         lambda: requests.get(
@@ -86,12 +87,12 @@ def pollExportRequestDetails(access_token, contract_number, request_key):
 def check_success(response):
     if response['requestStatus'] == 'Error':
         raise Exception('Download request failed!')
-    print 'Response Status: ' + response['requestStatus']
+    print('Response Status: ' + response['requestStatus'])
     return 'downloadUrl' in response
 
 
 def submitExportRequest(access_token, contract_number):
-    print 'Submitting export for contract: ' + contract_number
+    print('Submitting export for contract: ' + contract_number)
     export_request_url = urljoin(
         env.base_tokenflex_api,
         'v1/export/' +
@@ -101,23 +102,41 @@ def submitExportRequest(access_token, contract_number):
                'Authorization': 'Bearer ' + access_token}
     payload = {
         "fields": [
-            "contractYear",
-            "tokenPool",
-            "usageCategory",
-            "usageDate",
             "productLineCode",
-            "productName"
+            "productName",
+            "productVersion",
+            "productFeatureCode",
+            "userName",
+            "usageDate",
+            "usageMonth",
+            "contractYear",
+            "machineName",
+            "licenseServerName",
+            "usageType",
+            "usageCategory",
+            "tokenPool",
+        "customField1",
+        "customField2",
+        "customField3",
+        "customField4",
+        "customField5",
+        "customField6",
+        "customField7",
+        "customField8",
+        "customField9",
+        "customField10"            
         ],
         "metrics": [
-            "tokensConsumed"
+            "tokensConsumed",
+            "usageMinutes"
         ],
         "usageCategory": [
-            "DESKTOP_PRODUCT",
-            "CLOUD_PRODUCT",
+          "DESKTOP_PRODUCT",
+           "CLOUD_PRODUCT",
             "CLOUD_SERVICE"
         ],
-        "where": "contractYear=1",
-        "downloadFileName": contract_number + "_myYear1DesktopCloudUsage.csv"
+        "where": "usageMonth = '2019-04-01'",
+        "downloadFileName": "DesktopUsage Apr 2019"
     }
     resp = requests.post(
         export_request_url,
@@ -133,17 +152,17 @@ def start(access_token):
         contracts = getContracts(access_token)
         # Submit an Export request
         for contract in contracts:
-            print '*** Found contract: ' + contract['contractNumber']
+            print('*** Found contract: ' + contract['contractNumber'])
             contract_number = contract['contractNumber']
             export_request = submitExportRequest(access_token, contract_number)
             # Poll for request results
             request_key = export_request['requestKey']
-            print '*** Submitted export request: ' + request_key
+            print('*** Submitted export request: ' + request_key)
             request_details = getExportRequestsDetails(
                 access_token, contract_number, request_key)
             if request_details == 'Download':
                 request_status = request_details['requestStatus']
-                print '*** Retrieved export status: ' + request_status
+                print( '*** Retrieved export status: ' + request_status)
             else:
                 poll_status = pollExportRequestDetails(
                     access_token, contract_number, request_key)
@@ -151,13 +170,13 @@ def start(access_token):
                     request_details = getExportRequestsDetails(
                         access_token, contract_number, request_key)
                     request_status = request_details['requestStatus']
-                    print '*** Retrieved export status: ' + request_status
+                    print('*** Retrieved export status: ' + request_status)
                 else:
                     raise Exception('Error occurred!')
             download_url = request_details['downloadUrl']
-            print '*** Download url: ' + download_url
+            print('*** Download url: ' + download_url)
             download_filename = request_details['downloadFileName']
             downloadCsvFile(download_url, download_filename)
-            print '*** Downloaded file: ' + download_filename
+            print('*** Downloaded file: ' + download_filename)
     else:
-        print 'Invalid access_token. Exiting!'
+        print('Invalid access_token. Exiting!')
